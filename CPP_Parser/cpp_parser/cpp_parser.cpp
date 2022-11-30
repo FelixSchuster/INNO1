@@ -1,16 +1,20 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <sstream>
+#include <vector>
 #include <unordered_map>
 
-// C++ Parser for Files containing common HTML/XHTML Entities
+// C++ Parser for Moodle-Logfiles containing common HTML/XHTML Entities
+// Prepares Data to be used for Celonis Process Mining
 // Felix Schuster | 2022-11-30
 
-std::string parse(std::string string);
+std::string decodeHtmlEntities(std::string string);
+std::vector<std::string> splitString(std::string string, char delimiter);
 
 int main(int argc, char* argv[])
 {
-    if (argc != 2)
+    if (argc < 2)
     {
         std::cout << "Usage: " << argv[0] << " <logfile>" << std::endl;
         return -1;
@@ -23,7 +27,7 @@ int main(int argc, char* argv[])
 
     if (!ifstream.is_open())
     {
-        std::cout << "[!] Can not open file: " << argv[1] << std::endl;
+        std::cout << "[!] Can not open File: " << argv[1] << std::endl;
         return -1;
     }
 
@@ -31,18 +35,77 @@ int main(int argc, char* argv[])
 
     if(!ofstream.is_open())
     {
-        std::cout << "[!] Can not open file: " << argv[1] << ".celonis" << std::endl;
+        std::cout << "[!] Can not open File: " << argv[1] << ".celonis" << std::endl;
         ifstream.close();
         return -1;
     }
 
     std::string line = std::string();
+    bool offsetIsSet = false;
+    unsigned long long offset = 0;
 
     std::cout << "[*] Parsing " << argv[1] << std::endl;
 
     while (getline(ifstream, line))
     {
-        ofstream << parse(line) << std::endl;
+        line = decodeHtmlEntities(line);
+
+        bool exportLine = true;
+        std::vector<std::string> stringVector = splitString(line, ',');
+
+        if (!offsetIsSet) // Set Offset by searching for Keyword: "Zeit"
+        {
+            for (int i = 0; i < stringVector.size(); ++i)
+            {
+                if (stringVector.at(i) == "Zeit")
+                {
+                    offset = i;
+                }
+            }
+
+            offsetIsSet = true;
+        }
+
+        // Filter Options
+        if (exportLine && stringVector.size() >= 1 + offset && stringVector.at(1 + offset) == "User Admin")
+        {
+            exportLine = false;
+        }
+
+        if (exportLine && stringVector.size() >= 3 + offset && stringVector.at(3 + offset) == "Forum")
+        {
+            exportLine = false;
+        }
+
+        if (exportLine && stringVector.size() >= 3 + offset && stringVector.at(3 + offset) == "System")
+        {
+            exportLine = false;
+        }
+
+        if (exportLine && stringVector.size() >= 3 + offset && stringVector.at(3 + offset) == "Gruppenwahl")
+        {
+            exportLine = false;
+        }
+
+        if (exportLine && stringVector.size() >= 3 + offset && stringVector.at(3 + offset) == "Zoom Meeting")
+        {
+            exportLine = false;
+        }
+
+        if (exportLine && stringVector.size() >= 4 + offset && stringVector.at(4 + offset).find("angezeigt") != std::string::npos)
+        {
+            exportLine = false;
+        }
+
+        if (exportLine && stringVector.size() >= 4 + offset && stringVector.at(4 + offset).find("heruntergeladen") != std::string::npos)
+        {
+            exportLine = false;
+        }
+
+        if (exportLine)
+        {
+            ofstream << line << std::endl;
+        }
     }
 
     ifstream.close();
@@ -53,9 +116,10 @@ int main(int argc, char* argv[])
     return 0;
 }
 
-std::string parse(std::string string)
+std::string decodeHtmlEntities(std::string string)
 {
-    // http://www.elizabethcastro.com/html/extras/entities.html
+    // Decodes common HTML/XHTML Entities
+    // Returns a String containing decoded Entities
 
     std::unordered_map<std::string, std::string> map({
         {"&quot,", "\""}, {"&apos,", "'"}, {"&amp,", "&"},
@@ -87,6 +151,60 @@ std::string parse(std::string string)
         if (!substringFound)
         {
             result += string[i];
+        }
+    }
+
+    return result;
+}
+
+std::vector<std::string> splitString(std::string string, char delimiter)
+{
+    // Splits a String into Substrings given the Delimiter that seperates them
+    // Returns a Vector of Substrings
+    // Supports Strings containing the given Delimiter marked by Quotes as well
+    // Example: "substring1 <delimiter> substring2" 
+
+    std::vector<std::string> result;
+    std::stringstream stringStream = std::stringstream(string);
+    std::string subString = std::string();
+    std::string actualSubString = std::string();
+
+    while (getline(stringStream, subString, delimiter))
+    {
+        if (actualSubString == std::string() && subString.size() >= 1 && subString.at(0) == '"')
+        {
+            actualSubString = subString + ",";
+        }
+
+        else if (actualSubString != std::string())
+        {
+            actualSubString += subString;
+
+            if (actualSubString.back() != '"')
+            {
+                actualSubString += ",";
+            }
+
+            else
+            {
+                if (actualSubString.at(0) == '"')
+                {
+                    actualSubString.erase(actualSubString.begin());
+                }
+
+                if (actualSubString.length() >= 1 && actualSubString.at(actualSubString.length() - 1) == '"')
+                {
+                    actualSubString.erase(actualSubString.length() - 1);
+                }
+
+                result.push_back(actualSubString);
+                actualSubString = std::string();
+            }
+        }
+
+        else
+        {
+            result.push_back(subString);
         }
     }
 
