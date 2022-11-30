@@ -9,6 +9,8 @@
 // Prepares Data to be used for Celonis Process Mining
 // Felix Schuster | 2022-11-30
 
+const std::string FILE_EXTENSION = "_celonis.csv";
+
 std::string getOutFileName(std::string inFileName);
 std::string decodeHtmlEntities(std::string string);
 std::vector<std::string> splitString(std::string string, char delimiter);
@@ -23,7 +25,7 @@ int main(int argc, char* argv[])
 
     std::ifstream ifstream = std::ifstream();
     std::ofstream ofstream = std::ofstream();
-   
+
     ifstream.open(argv[1]);
 
     if (!ifstream.is_open())
@@ -34,7 +36,7 @@ int main(int argc, char* argv[])
 
     ofstream.open(getOutFileName(argv[1]));
 
-    if(!ofstream.is_open())
+    if (!ofstream.is_open())
     {
         std::cout << "[!] Can not open File: " << getOutFileName(argv[1]) << std::endl;
         ifstream.close();
@@ -42,10 +44,14 @@ int main(int argc, char* argv[])
     }
 
     std::string line = std::string();
-    bool offsetIsSet = false;
-    unsigned long long offset = 0;
+    bool indicesAreSet = false;
+    unsigned long long zeitIndex = ULLONG_MAX;
+    unsigned long long vollstaendigerNameIndex = ULLONG_MAX;
+    unsigned long long ereigniskontextIndex = ULLONG_MAX;
+    unsigned long long ereignisnameIndex = ULLONG_MAX;
 
     std::cout << "[*] Parsing " << argv[1] << std::endl;
+    std::cout << "[*] Writing to File: " << getOutFileName(argv[1]) << std::endl;
 
     while (getline(ifstream, line))
     {
@@ -54,64 +60,93 @@ int main(int argc, char* argv[])
         bool exportLine = true;
         std::vector<std::string> stringVector = splitString(line, ',');
 
-        if (!offsetIsSet) // Set Offset by searching for Keyword: "Zeit"
+        if (!indicesAreSet)
         {
             for (int i = 0; i < stringVector.size(); ++i)
             {
                 if (stringVector.at(i) == "Zeit")
                 {
-                    offset = i;
+                    zeitIndex = i;
+                }
+
+                if (stringVector.at(i) == "Vollständiger Name")
+                {
+                    vollstaendigerNameIndex = i;
+                }
+
+                if (stringVector.at(i) == "Ereigniskontext")
+                {
+                    ereigniskontextIndex = i;
+                }
+
+                if (stringVector.at(i) == "Ereignisname")
+                {
+                    ereignisnameIndex = i;
                 }
             }
 
-            offsetIsSet = true;
-        }
-
-        // Filter Options
-        if (exportLine && stringVector.size() >= 1 + offset && stringVector.at(1 + offset) == "User Admin")
-        {
-            exportLine = false;
-        }
-
-        if (exportLine && stringVector.size() >= 3 + offset && stringVector.at(3 + offset) == "Forum")
-        {
-            exportLine = false;
-        }
-
-        if (exportLine && stringVector.size() >= 3 + offset && stringVector.at(3 + offset) == "System")
-        {
-            exportLine = false;
-        }
-
-        if (exportLine && stringVector.size() >= 3 + offset && stringVector.at(3 + offset) == "Gruppenwahl")
-        {
-            exportLine = false;
-        }
-
-        if (exportLine && stringVector.size() >= 3 + offset && stringVector.at(3 + offset) == "Zoom Meeting")
-        {
-            exportLine = false;
-        }
-
-        if (exportLine && stringVector.size() >= 4 + offset && stringVector.at(4 + offset).find("angezeigt") != std::string::npos)
-        {
-            exportLine = false;
-        }
-
-        if (exportLine && stringVector.size() >= 4 + offset && stringVector.at(4 + offset).find("heruntergeladen") != std::string::npos)
-        {
-            exportLine = false;
-        }
-
-        if (exportLine)
-        {
-            while (line.back() == ',')
+            if (!(zeitIndex == ULLONG_MAX && vollstaendigerNameIndex == ULLONG_MAX &&
+                ereigniskontextIndex == ULLONG_MAX && ereignisnameIndex == ULLONG_MAX))
             {
-                line.pop_back();
+                indicesAreSet = true;
+            }
+        }
+
+        if (indicesAreSet)
+        {
+            if (exportLine && stringVector.size() >= vollstaendigerNameIndex && stringVector.at(vollstaendigerNameIndex) == "User Admin")
+            {
+                exportLine = false;
             }
 
+            if (exportLine && stringVector.size() >= ereigniskontextIndex && stringVector.at(ereigniskontextIndex) == "Forum")
+            {
+                exportLine = false;
+            }
+
+            if (exportLine && stringVector.size() >= ereigniskontextIndex && stringVector.at(ereigniskontextIndex) == "System")
+            {
+                exportLine = false;
+            }
+
+            if (exportLine && stringVector.size() >= ereigniskontextIndex && stringVector.at(ereigniskontextIndex) == "Gruppenwahl")
+            {
+                exportLine = false;
+            }
+
+            if (exportLine && stringVector.size() >= ereigniskontextIndex && stringVector.at(ereigniskontextIndex) == "Zoom Meeting")
+            {
+                exportLine = false;
+            }
+
+            if (exportLine && stringVector.size() >= ereignisnameIndex && stringVector.at(ereignisnameIndex).find("angezeigt") != std::string::npos)
+            {
+                exportLine = false;
+            }
+
+            if (exportLine && stringVector.size() >= ereignisnameIndex && stringVector.at(ereignisnameIndex).find("heruntergeladen") != std::string::npos)
+            {
+                exportLine = false;
+            }
+
+            if (exportLine)
+            {
+                ofstream << stringVector.at(zeitIndex) << ","
+                    << stringVector.at(vollstaendigerNameIndex) << ","
+                    << stringVector.at(ereigniskontextIndex) << " - "
+                    << stringVector.at(ereignisnameIndex) << std::endl;
+            }
+        }
+
+        if (!indicesAreSet)
+        {
             ofstream << line << std::endl;
         }
+    }
+
+    if (!indicesAreSet)
+    {
+        std::cout << "[-] Unknown Pattern. " << argv[0] << " will try to parse HTML/XHTML Characters anyway." << std::endl;
     }
 
     ifstream.close();
@@ -177,28 +212,28 @@ std::vector<std::string> splitString(std::string string, char delimiter)
 
     while (getline(stringStream, subString, delimiter))
     {
-        if (actualSubString == std::string() && subString.size() >= 1 && subString.at(0) == '"')
+        if (actualSubString == std::string() && subString.size() >= 1 && subString.at(0) == '\"')
         {
             actualSubString = subString + ",";
         }
-
-        else if (actualSubString != std::string())
+        
+        if (actualSubString != std::string())
         {
             actualSubString += subString;
 
-            if (actualSubString.back() != '"')
+            if (actualSubString.back() != '\"')
             {
                 actualSubString += ",";
             }
 
             else
             {
-                if (actualSubString.at(0) == '"')
+                if (actualSubString.at(0) == '\"')
                 {
                     actualSubString.erase(actualSubString.begin());
                 }
 
-                if (actualSubString.length() >= 1 && actualSubString.back() == '"')
+                if (actualSubString.length() >= 1 && actualSubString.back() == '\"')
                 {
                     actualSubString.pop_back();
                 }
@@ -227,7 +262,7 @@ std::string getOutFileName(std::string inFileName)
 
     if (outFileNameVector.size() == 1)
     {
-        return inFileName + "_celonis.csv";
+        return inFileName + FILE_EXTENSION;
     }
 
     for (int i = 0; i < outFileNameVector.size() - 1; ++i)
@@ -235,5 +270,5 @@ std::string getOutFileName(std::string inFileName)
         outFileName += outFileNameVector.at(i);
     }
 
-    return outFileName + "_celonis.csv";
+    return outFileName + FILE_EXTENSION;
 }
