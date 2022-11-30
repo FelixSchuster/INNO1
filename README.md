@@ -1,9 +1,7 @@
-# Process Mining meets Teaching Analytics
-
-## CPP_Parser
+# CPP_Parser
 C++ Parser for Files containing common HTML/XHTML Entities
 
-### Usage:
+## Usage:
 
 ```
 ./cpp_parser.exe <logfile>
