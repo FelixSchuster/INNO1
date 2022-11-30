@@ -9,6 +9,7 @@
 // Prepares Data to be used for Celonis Process Mining
 // Felix Schuster | 2022-11-30
 
+std::string getOutFileName(std::string inFileName);
 std::string decodeHtmlEntities(std::string string);
 std::vector<std::string> splitString(std::string string, char delimiter);
 
@@ -31,11 +32,11 @@ int main(int argc, char* argv[])
         return -1;
     }
 
-    ofstream.open(std::string(argv[1]) + ".celonis");
+    ofstream.open(getOutFileName(argv[1]));
 
     if(!ofstream.is_open())
     {
-        std::cout << "[!] Can not open File: " << argv[1] << ".celonis" << std::endl;
+        std::cout << "[!] Can not open File: " << getOutFileName(argv[1]) << std::endl;
         ifstream.close();
         return -1;
     }
@@ -104,6 +105,11 @@ int main(int argc, char* argv[])
 
         if (exportLine)
         {
+            while (line.back() == ',')
+            {
+                line.pop_back();
+            }
+
             ofstream << line << std::endl;
         }
     }
@@ -192,9 +198,9 @@ std::vector<std::string> splitString(std::string string, char delimiter)
                     actualSubString.erase(actualSubString.begin());
                 }
 
-                if (actualSubString.length() >= 1 && actualSubString.at(actualSubString.length() - 1) == '"')
+                if (actualSubString.length() >= 1 && actualSubString.back() == '"')
                 {
-                    actualSubString.erase(actualSubString.length() - 1);
+                    actualSubString.pop_back();
                 }
 
                 result.push_back(actualSubString);
@@ -209,4 +215,25 @@ std::vector<std::string> splitString(std::string string, char delimiter)
     }
 
     return result;
+}
+
+std::string getOutFileName(std::string inFileName)
+{
+    // Converts inFileName to OutFileName
+    // Example: <filename>.csv will return <filename>.celonis.csv
+
+    std::string outFileName = std::string();
+    std::vector<std::string> outFileNameVector = splitString(inFileName, '.');
+
+    if (outFileNameVector.size() == 1)
+    {
+        return inFileName + "_celonis.csv";
+    }
+
+    for (int i = 0; i < outFileNameVector.size() - 1; ++i)
+    {
+        outFileName += outFileNameVector.at(i);
+    }
+
+    return outFileName + "_celonis.csv";
 }
