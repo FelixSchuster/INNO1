@@ -30,5 +30,6 @@ The following Entries will be removed:
 | Komponente | System |
 | Komponente | Gruppenwahl |
 | Komponente | Zoom Meeting |
+| Komponente | Verzeichnis |
 | Ereignisname | \*angezeigt\* |
 | Ereignisname | \*heruntergeladen\* |

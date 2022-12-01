@@ -17,7 +17,7 @@ std::vector<std::string> splitString(std::string string, char delimiter);
 
 int main(int argc, char* argv[])
 {
-    if (argc < 2)
+    if (argc != 2)
     {
         std::cout << "Usage: " << argv[0] << " <logfile>" << std::endl;
         return -1;
@@ -49,6 +49,7 @@ int main(int argc, char* argv[])
     unsigned long long vollstaendigerNameIndex = ULLONG_MAX;
     unsigned long long ereigniskontextIndex = ULLONG_MAX;
     unsigned long long ereignisnameIndex = ULLONG_MAX;
+    unsigned long long komponenteIndex = ULLONG_MAX;
 
     std::cout << "[*] Parsing " << argv[1] << std::endl;
     std::cout << "[*] Writing to File: " << getOutFileName(argv[1]) << std::endl;
@@ -79,6 +80,11 @@ int main(int argc, char* argv[])
                     ereigniskontextIndex = i;
                 }
 
+                if (stringVector.at(i) == "Komponente")
+                {
+                    komponenteIndex = i;
+                }
+
                 if (stringVector.at(i) == "Ereignisname")
                 {
                     ereignisnameIndex = i;
@@ -86,7 +92,8 @@ int main(int argc, char* argv[])
             }
 
             if (!(zeitIndex == ULLONG_MAX && vollstaendigerNameIndex == ULLONG_MAX &&
-                ereigniskontextIndex == ULLONG_MAX && ereignisnameIndex == ULLONG_MAX))
+                ereigniskontextIndex == ULLONG_MAX && komponenteIndex  == ULLONG_MAX
+                && ereignisnameIndex == ULLONG_MAX))
             {
                 indicesAreSet = true;
             }
@@ -99,22 +106,27 @@ int main(int argc, char* argv[])
                 exportLine = false;
             }
 
-            if (exportLine && stringVector.size() >= ereigniskontextIndex && stringVector.at(ereigniskontextIndex) == "Forum")
+            if (exportLine && stringVector.size() >= komponenteIndex && stringVector.at(komponenteIndex) == "Forum")
             {
                 exportLine = false;
             }
 
-            if (exportLine && stringVector.size() >= ereigniskontextIndex && stringVector.at(ereigniskontextIndex) == "System")
+            if (exportLine && stringVector.size() >= komponenteIndex && stringVector.at(komponenteIndex) == "System")
             {
                 exportLine = false;
             }
 
-            if (exportLine && stringVector.size() >= ereigniskontextIndex && stringVector.at(ereigniskontextIndex) == "Gruppenwahl")
+            if (exportLine && stringVector.size() >= komponenteIndex && stringVector.at(komponenteIndex) == "Gruppenwahl")
             {
                 exportLine = false;
             }
 
-            if (exportLine && stringVector.size() >= ereigniskontextIndex && stringVector.at(ereigniskontextIndex) == "Zoom Meeting")
+            if (exportLine && stringVector.size() >= komponenteIndex && stringVector.at(komponenteIndex) == "Zoom Meeting")
+            {
+                exportLine = false;
+            }
+
+            if (exportLine && stringVector.size() >= komponenteIndex && stringVector.at(komponenteIndex) == "Verzeichnis")
             {
                 exportLine = false;
             }
@@ -208,44 +220,41 @@ std::vector<std::string> splitString(std::string string, char delimiter)
     std::vector<std::string> result;
     std::stringstream stringStream = std::stringstream(string);
     std::string subString = std::string();
-    std::string actualSubString = std::string();
+    std::string subStringInQuotes = std::string();
+    bool subStringInQuotesDetected = false;
+    bool pushToResult = true;
 
     while (getline(stringStream, subString, delimiter))
     {
-        if (actualSubString == std::string() && subString.size() >= 1 && subString.at(0) == '\"')
+        if (subString.length() > 0 && subString.at(0) == '"' || subStringInQuotesDetected)
         {
-            actualSubString = subString + ",";
-        }
-        
-        if (actualSubString != std::string())
-        {
-            actualSubString += subString;
-
-            if (actualSubString.back() != '\"')
+            if (!subStringInQuotesDetected)
             {
-                actualSubString += ",";
+                subString.erase(subString.begin());
             }
 
-            else
+            subStringInQuotesDetected = true;
+            subStringInQuotes += subString;
+
+            if (subString.back() == '"')
             {
-                if (actualSubString.at(0) == '\"')
-                {
-                    actualSubString.erase(actualSubString.begin());
-                }
+                subStringInQuotes.pop_back();
 
-                if (actualSubString.length() >= 1 && actualSubString.back() == '\"')
-                {
-                    actualSubString.pop_back();
-                }
-
-                result.push_back(actualSubString);
-                actualSubString = std::string();
+                result.push_back(subStringInQuotes);
+                subStringInQuotesDetected = false;
+                subStringInQuotes = std::string();
+                pushToResult = false;
             }
         }
 
-        else
+        if (pushToResult && !subStringInQuotesDetected && subStringInQuotes == std::string())
         {
             result.push_back(subString);
+        }
+
+        if (!pushToResult)
+        {
+            pushToResult = true;
         }
     }
 
