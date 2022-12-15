@@ -106,6 +106,11 @@ int main(int argc, char* argv[])
                 exportLine = false;
             }
 
+            if (exportLine && stringVector.size() >= ereigniskontextIndex && stringVector.at(ereigniskontextIndex).find("(Kopie)") != std::string::npos)
+            {
+                exportLine = false;
+            }
+
             if (exportLine && stringVector.size() >= komponenteIndex && stringVector.at(komponenteIndex) == "Forum")
             {
                 exportLine = false;
@@ -176,7 +181,8 @@ std::string decodeHtmlEntities(std::string string)
 
     std::unordered_map<std::string, std::string> map({
         {"&quot,", "\""}, {"&apos,", "'"}, {"&amp,", "&"},
-        {"&gt,", ">"}, {"&lt,", "<"}, {"&frasl,", "/"} });
+        {"&gt,", ">"}, {"&lt,", "<"}, {"&frasl,", "/"},
+        {"-,", "0,"} });
 
     std::string result = std::string();
 
