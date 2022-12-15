@@ -23,6 +23,7 @@ The following HTML/XHTML Entities are translated to their actual Values:
 Additionally the following Key is replaced so Celonis can properly interpret non-existing Entries:
 
 | Key | Value |
+| :--- | :--- |
 | -, | 0, |
 
 The following Entries will be removed:
