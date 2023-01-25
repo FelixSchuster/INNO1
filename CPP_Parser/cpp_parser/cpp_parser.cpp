@@ -95,12 +95,6 @@ int main(int argc, char* argv[])
                 }
             }
 
-            std::cout << "zeitIndex: " << zeitIndex << std::endl;
-            std::cout << "vollstaendigerNameIndex: " << vollstaendigerNameIndex << std::endl;
-            std::cout << "ereigniskontextIndex: " << ereigniskontextIndex << std::endl;
-            std::cout << "komponenteIndex: " << komponenteIndex << std::endl;
-            std::cout << "ereignisnameIndex: " << ereignisnameIndex << std::endl;
-
             if (zeitIndex != ULLONG_MAX && vollstaendigerNameIndex != ULLONG_MAX && ereigniskontextIndex != ULLONG_MAX && komponenteIndex != ULLONG_MAX && ereignisnameIndex != ULLONG_MAX)
             {
                 indicesAreSet = true;
