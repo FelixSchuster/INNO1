@@ -1,6 +1,6 @@
 # CPP_Parser
-C++ Parser for Moodle-Logfiles containing common HTML/XHTML Entities\
-Prepares Data to be used for Celonis Process Mining
+A C++ parser for moodle-logfiles containing common HTML/XHTML entities\
+Prepares data to be used for celonis process mining
 
 ## Usage
 CLI:
@@ -9,7 +9,7 @@ cpp_parser.exe <logfile>
 ```
 
 ## Features
-The following HTML/XHTML Entities are translated to their actual Values:
+The following HTML/XHTML entities are translated to their actual values:
 
 | Key | Value |
 | :--- | :--- |
@@ -20,13 +20,13 @@ The following HTML/XHTML Entities are translated to their actual Values:
 | &lt, | < |
 | &lt, | / |
 
-Additionally the following Key is replaced so Celonis can properly interpret non-existing Entries:
+Additionally the following key is replaced so celonis can properly interpret non-existing entries:
 
 | Key | Value |
 | :--- | :--- |
 | -, | 0, |
 
-The following Entries will be removed:
+The following entries will be removed from the filtered file:
 
 | Key | Value |
 | :--- | :--- |
@@ -41,7 +41,7 @@ The following Entries will be removed:
 | Ereignisname | \*heruntergeladen\* |
 
 ## Bugs
-The Parser currently crashes when parsing an already parsed File.
+None that we are aware of.
 
 ## TODO
-Fix the Bugs.
+Check for valid number of rows in headline.
